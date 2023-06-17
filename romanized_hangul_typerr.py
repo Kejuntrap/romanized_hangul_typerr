@@ -148,7 +148,8 @@ def output_tsv():
     f.write("い" + delim + "ㅇ" + delim + w_type + nl)
     f.write("う" + delim + "ㅇ" + delim + w_type + nl)
     f.write("え" + delim + "ㅇ" + delim + w_type + nl)
-    f.write("お" + delim + "ㅇ" + delim + w_type + nl)  # ㅇㅈ インジョンを いｊで出せるようにする
+    f.write("お" + delim + "ㅇ" + delim + w_type + nl)
+    f.write("んｇ" + delim + "ㅇ" + delim + w_type + nl)  # ㅇㅈ インジョンを いｊで出せるようにする
     f.write("あ" + delim + "ㅏ" + delim + w_type + nl)
     f.write("えお" + delim + "ㅓ" + delim + w_type + nl)
     f.write("お" + delim + "ㅗ" + delim + w_type + nl)

@@ -28,7 +28,11 @@ IMEのアイコン(「A」とか「あ」のやつ)を右クリックして単�
 
 このリポジトリにある`romanized_hangul_typerr.txt`はすでに`romanized_hangul_typerr.py`を実行して出力したものなのでテキストファイルをダウンロードしてIMEに追加することも可能。
 
+## how to run
 
+開発はpython3(3.9.12)
+
+動作確認はしていないが3.6くらいでも動くはず
 
 ## licence
 
