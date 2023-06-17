@@ -28,6 +28,8 @@ IMEのアイコン(「A」とか「あ」のやつ)を右クリックして単�
 
 このリポジトリにある`romanized_hangul_typerr.txt`はすでに`romanized_hangul_typerr.py`を実行して出力したものなのでテキストファイルをダウンロードしてIMEに追加することも可能。
 
+
+
 ## licence
 
 MIT Licence

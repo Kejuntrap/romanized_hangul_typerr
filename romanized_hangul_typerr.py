@@ -173,6 +173,7 @@ def output_tsv():
     f.write("うい" + delim + "ㅢ" + delim + w_type + nl)
     # 特殊ケース 子音
     f.write("ｇ" + delim + "ㄱ" + delim + w_type + nl)
+    f.write("ｋ" + delim + "ㅋ" + delim + w_type + nl)
     f.write("ｋ" + delim + "ㄱ" + delim + w_type + nl)
     f.write("ｋｋ" + delim + "ㄲ" + delim + w_type + nl)
     f.write("ｋ" + delim + "ㄲ" + delim + w_type + nl)
