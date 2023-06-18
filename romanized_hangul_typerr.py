@@ -1,10 +1,28 @@
+import io, sys
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
+hangul_vowel = [
+    "ㅏ","ㅐ","ㅑ","ㅒ","ㅓ","ㅔ","ㅕ","ㅖ","ㅗ","ㅘ","ㅙ","ㅚ","ㅛ","ㅜ","ㅝ","ㅞ","ㅟ","ㅠ","ㅡ","ㅢ","ㅣ"
+]
+vowels = ["a", "i", "u", "e", "o"]
 vowel_rr = ["a", "ae", "ya", "yae", "eo", "e", "yeo", "ye", "o", "wa", "wae", "oe", "yo", "u", "wo", "we", "wi", "yu",
             "eu", "ui", "i"]
+
 consonant_rr = ["g", "kk", "n", "d", "tt", "r", "m", "b", "pp", "s", "ss", "", "j", "jj", "ch", "k", "t", "p", "h"]
+hangul_consonant = [
+    "ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"
+]
+
 batchim_wov_rr = ["", "k", "k", "kt", "n", "nt", "nh", "t", "l", "lk", "lm", "lp", "lt", "lt", "lp", "lh", "m", "p",
                   "pt", "t", "t", "ng", "t", "t", "k", "t", "p", "h"]
 batchim_wv_rr = ["", "g", "kk", "ks", "n", "nj", "nh", "d", "r", "lg", "lm", "lb", "ls", "lt", "lp", "lh", "m", "b",
                  "ps", "s", "ss", "ng", "j", "ch", "k", "t", "p", "h"]
+hangul_batchim = [
+    [""],["ᆨ","ᄀ"],["ᆩ","ᄁ"],["ᆪ"],["ᆫ","ᄂ"],["ᆬ","ᅜ"],["ᆭ","ᅝ"],["ᆮ","ᄃ"],["ᆯ","ᄅ"],["ᆰ"],["ᆱ"],["ᆲ"],["ᆳ"],
+    ["ᆴ"],["ᆵ"],["ᆶ","ᄚ"],["ᆷ","ᄆ"],["ᆸ","ᄇ"],["ᆹ","ᄡ"],["ᆺ","ᄉ"],["ᆻ","ᄊ"],["ᆼ","ᄋ"],["ᆽ","ᄌ"],["ᆾ","ᄎ"],
+    ["ᆿ","ᄏ"],["ᇀ","ᄐ"],["ᇁ","ᄑ"],["ᇂ","ᄒ"]
+]
 
 rr_to_jp = {
     "a": "あ", "eo": "えお", "o": "お", "u": "う", "eu": "えう", "i": "い", "ae": "あえ", "e": "え",
@@ -80,14 +98,16 @@ rr_to_jp = {
     "ppo": "っぽ", "ppu": "っぷ", "ppeu": "っぺう", "ppi": "っぴ", "ppae": "っぱえ", "ppe": "っぺ",
     "ppoe": "っぽえ", "ppwi": "ｐｐうぃ", "ppya": "っぴゃ", "ppyeo": "っぴぇお", "ppyo": "っぴょ",
     "ppyu": "っぴゅ", "ppyae": "っぴゃえ", "ppye": "っぴぇ", "ppwa": "ｐｐわ", "ppwae": "ｐｐわえ",
-    "ppwo": "ｐｐを", "ppwe": "ｐｐうぇ", "ppui": "っぷい",
+    "ppwo": "ｐｐを", "ppwe": "ｐｐうぇ", "ppui": "っぷい","tt":"ｔｔ","pp":"ｐｐ","jj":"ｊｊ"
 }
+
+# keyは　ハングルのアルファベット表記＋日本語入力＋ハングル
+duplication_memorize = {}   # 同じハングルと読みが登録されていないか?
+
 
 delim = "\t"
 nl = "\n"
 w_type = "固有名詞"
-
-vowels = ["a", "i", "u", "e", "o"]
 
 
 def hangul_unicode(_c, _v, _b):
@@ -107,6 +127,7 @@ def hangul_pronounce(code, _next_vowel):
 
 def main():
     output_tsv()
+    print(len(duplication_memorize))
 
 
 def romaji_to_jpinput(_str):
@@ -135,81 +156,56 @@ def output_tsv():
                 h_uni = hangul_unicode(ci, vi, bi)
                 hp1 = hangul_pronounce(h_uni, False)
                 hp2 = hangul_pronounce(h_uni, True)
-                _str = romaji_to_jpinput(hp1) + delim + str(chr(h_uni)) + delim + w_type + nl
-                if romaji_to_jpinput(hp1)[-1] == "ｎ":
-                    _str += romaji_to_jpinput(hp1).replace("ｎ", "ん") + delim + str(chr(h_uni)) + delim + w_type + nl
-                if hp1 != hp2:
+
+                if hp1+romaji_to_jpinput(hp1)+str(chr(h_uni)) not in duplication_memorize:
+                    _str = romaji_to_jpinput(hp1) + delim + str(chr(h_uni)) + delim + w_type + nl
+                    duplication_memorize[hp1+romaji_to_jpinput(hp1)+str(chr(h_uni))] = 1
+
+                if romaji_to_jpinput(hp1)[-1] == "ｎ" and hp1+romaji_to_jpinput(hp1).replace("ｎ", "ん")+str(chr(h_uni)) not in duplication_memorize:
+                    _str += romaji_to_jpinput(hp1).replace("ｎ", "ん") + delim + str(chr(h_uni)) + delim + w_type + nl    # ぱｎ(판)のように最後がｎで終わるやつがんに変換されても出るようにする
+                    duplication_memorize[hp1+romaji_to_jpinput(hp1).replace("ｎ", "ん")+str(chr(h_uni))] = 1
+
+                if hp1 != hp2 and hp2+romaji_to_jpinput(hp2)+str(chr(h_uni)) not in duplication_memorize:      # 後にくるハングルで読みが変わるやつはそれも登録する
                     _str += romaji_to_jpinput(hp2) + delim + str(chr(h_uni)) + delim + w_type + nl
-                    if romaji_to_jpinput(hp2)[-1] == "ｎ":
-                        _str += romaji_to_jpinput(hp2).replace("ｎ", "ん") + delim + str(chr(h_uni)) + delim + w_type + nl
-                f.write(_str)
-    # 特殊ケース 短母音
-    f.write("あ" + delim + "ㅇ" + delim + w_type + nl)
-    f.write("い" + delim + "ㅇ" + delim + w_type + nl)
-    f.write("う" + delim + "ㅇ" + delim + w_type + nl)
-    f.write("え" + delim + "ㅇ" + delim + w_type + nl)
-    f.write("お" + delim + "ㅇ" + delim + w_type + nl)
-    f.write("んｇ" + delim + "ㅇ" + delim + w_type + nl)  # ㅇㅈ インジョンを いｊで出せるようにする
-    f.write("あ" + delim + "ㅏ" + delim + w_type + nl)
-    f.write("えお" + delim + "ㅓ" + delim + w_type + nl)
-    f.write("お" + delim + "ㅗ" + delim + w_type + nl)
-    f.write("う" + delim + "ㅜ" + delim + w_type + nl)
-    f.write("えう" + delim + "ㅡ" + delim + w_type + nl)
-    f.write("い" + delim + "ㅣ" + delim + w_type + nl)
-    f.write("あえ" + delim + "ㅐ" + delim + w_type + nl)
-    f.write("え" + delim + "ㅔ" + delim + w_type + nl)
-    f.write("おえ" + delim + "ㅚ" + delim + w_type + nl)
-    f.write("うぃ" + delim + "ㅟ" + delim + w_type + nl)
-    # 特殊ケース 二重母音
-    f.write("や" + delim + "ㅑ" + delim + w_type + nl)
-    f.write("いぇお" + delim + "ㅕ" + delim + w_type + nl)
-    f.write("よ" + delim + "ㅛ" + delim + w_type + nl)
-    f.write("ゆ" + delim + "ㅠ" + delim + w_type + nl)
-    f.write("やえ" + delim + "ㅒ" + delim + w_type + nl)
-    f.write("いぇ" + delim + "ㅖ" + delim + w_type + nl)
-    f.write("わ" + delim + "ㅘ" + delim + w_type + nl)
-    f.write("わえ" + delim + "ㅙ" + delim + w_type + nl)
-    f.write("を" + delim + "ㅝ" + delim + w_type + nl)
-    f.write("うぇ" + delim + "ㅞ" + delim + w_type + nl)
-    f.write("うい" + delim + "ㅢ" + delim + w_type + nl)
-    # 特殊ケース 子音
-    f.write("ｇ" + delim + "ㄱ" + delim + w_type + nl)
-    f.write("ｋ" + delim + "ㅋ" + delim + w_type + nl)
-    f.write("ｋ" + delim + "ㄱ" + delim + w_type + nl)
-    f.write("ｋｋ" + delim + "ㄲ" + delim + w_type + nl)
-    f.write("ｋ" + delim + "ㄲ" + delim + w_type + nl)
-    f.write("ｇｇ" + delim + "ㄲ" + delim + w_type + nl)
-    f.write("ｄ" + delim + "ㄷ" + delim + w_type + nl)
-    f.write("ｔ" + delim + "ㄷ" + delim + w_type + nl)
-    f.write("ｔｔ" + delim + "ㄸ" + delim + w_type + nl)
-    f.write("ｔ" + delim + "ㅌ" + delim + w_type + nl)
-    f.write("ｂ" + delim + "ㅂ" + delim + w_type + nl)
-    f.write("ｐ" + delim + "ㅂ" + delim + w_type + nl)
-    f.write("ｐｐ" + delim + "ㅃ" + delim + w_type + nl)
-    f.write("ｐ" + delim + "ㅍ" + delim + w_type + nl)
-    f.write("ｊ" + delim + "ㅈ" + delim + w_type + nl)
-    f.write("ｊｊ" + delim + "ㅉ" + delim + w_type + nl)
-    f.write("ｃｈ" + delim + "ㅊ" + delim + w_type + nl)
-    f.write("ｓ" + delim + "ㅅ" + delim + w_type + nl)
-    f.write("ｓｓ" + delim + "ㅆ" + delim + w_type + nl)
-    f.write("ｈ" + delim + "ㅎ" + delim + w_type + nl)
-    f.write("ｎ" + delim + "ㄴ" + delim + w_type + nl)
-    f.write("ん" + delim + "ㄴ" + delim + w_type + nl)
-    f.write("ｍ" + delim + "ㅁ" + delim + w_type + nl)
-    f.write("ｒ" + delim + "ㄹ" + delim + w_type + nl)
-    f.write("ｌ" + delim + "ㄹ" + delim + w_type + nl)
-    # 特殊ケース 二重パッチム
-    f.write("ｇｓ" + delim + "ㄳ" + delim + w_type + nl)
-    f.write("ｌｇ" + delim + "ㄺ" + delim + w_type + nl)
-    f.write("んｊ" + delim + "ㄵ" + delim + w_type + nl)
-    f.write("んｈ" + delim + "ㄶ" + delim + w_type + nl)
-    f.write("ｌｓ" + delim + "ㄽ" + delim + w_type + nl)
-    f.write("ｌｔ" + delim + "ㄾ" + delim + w_type + nl)
-    f.write("ｌｈ" + delim + "ㅀ" + delim + w_type + nl)
-    f.write("ｌｂ" + delim + "ㄼ" + delim + w_type + nl)
-    f.write("ｌｍ" + delim + "ㄻ" + delim + w_type + nl)
-    f.write("ｂｓ" + delim + "ㅄ" + delim + w_type + nl)
-    f.write("ｌｐ" + delim + "ㄿ" + delim + w_type + nl)
+                    duplication_memorize[hp2+romaji_to_jpinput(hp2)+str(chr(h_uni))] = 1
+                    if romaji_to_jpinput(hp2)[-1] == "ｎ" and hp2+romaji_to_jpinput(hp2).replace("ｎ", "ん")+str(chr(h_uni)) not in duplication_memorize:
+                        _str += romaji_to_jpinput(hp2).replace("ｎ", "ん") + delim + str(chr(h_uni)) + delim + w_type + nl    # ぱｎ(판)のように最後がｎで終わるやつがんに変換されても出るようにする
+                        duplication_memorize[hp2+romaji_to_jpinput(hp2).replace("ｎ", "ん")+str(chr(h_uni))] = 1
+
+                if len(_str) > 0:
+                    f.write(_str)
+
+    # 母音ㅏやㅗなど ㅇをngと母音で出せるようにする ㅇㅈをいｊで出せるようにする
+    for i in range(0,len(hangul_vowel)):
+        if vowel_rr[i] + romaji_to_jpinput(vowel_rr[i]) + hangul_vowel[i] not in duplication_memorize:
+            f.write(romaji_to_jpinput(vowel_rr[i]) + delim + hangul_vowel[i] + delim + w_type + nl)
+            duplication_memorize[vowel_rr[i] + romaji_to_jpinput(vowel_rr[i]) + hangul_vowel[i]] = 1
+
+        if vowel_rr[i] +romaji_to_jpinput(vowel_rr[i]) + "ㅇ" not in duplication_memorize:
+            f.write(romaji_to_jpinput(vowel_rr[i]) + delim + "ㅇ" + delim + w_type + nl)
+            duplication_memorize[vowel_rr[i] + romaji_to_jpinput(vowel_rr[i])+ "ㅇ"] = 1
+
+        f.write("んｇ" + delim + "ㅇ" + delim + w_type + nl)  # ㅇㅈ インジョンを いｊで出せるようにする
+        duplication_memorize["ngんｇㅇ"] = 1
+
+
+    # 子音
+    for i in range(0,len(hangul_consonant)):
+        if len(romaji_to_jpinput(consonant_rr[i])) > 0 and consonant_rr[i]+romaji_to_jpinput(consonant_rr[i])+hangul_consonant[i] not in duplication_memorize: # 無音のㅇを登録するのはあまりよろしくない
+            f.write(romaji_to_jpinput(consonant_rr[i]) + delim + hangul_consonant[i] + delim + w_type + nl)
+            duplication_memorize[consonant_rr[i]+romaji_to_jpinput(consonant_rr[i])+hangul_consonant[i]] = 1
+
+    # パッチム
+    for i in range(1,len(hangul_batchim)):  # 0はパッチムがつかないハングル用なので
+        for j in range(0,len(hangul_batchim[i])):
+            if batchim_wov_rr[i]+romaji_to_jpinput(batchim_wov_rr[i])+hangul_batchim[i][j] not in duplication_memorize:
+                f.write(romaji_to_jpinput(batchim_wov_rr[i]) + delim + hangul_batchim[i][j] + delim + w_type + nl)
+                duplication_memorize[batchim_wov_rr[i]+romaji_to_jpinput(batchim_wov_rr[i])+hangul_batchim[i][j]] = 1
+
+            if batchim_wv_rr[i]+romaji_to_jpinput(batchim_wv_rr[i])+hangul_batchim[i][j] not in duplication_memorize:
+                f.write(romaji_to_jpinput(batchim_wv_rr[i]) + delim + hangul_batchim[i][j] + delim + w_type + nl)
+                duplication_memorize[batchim_wv_rr[i]+romaji_to_jpinput(batchim_wv_rr[i])+hangul_batchim[i][j]] = 1
+
     f.close()
 
 
