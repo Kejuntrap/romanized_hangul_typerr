@@ -1,5 +1,4 @@
 import operator
-import jk_converter as jk
 import romanized_hangul_typerr as rh
 import os.path
 import base as b
@@ -16,16 +15,16 @@ def convert_romaji_jp_type(_str):
     _ret_str = ""
     _pointer = 0
     for i in range(0, len(_str)):
-        if _str[i] in jk.vowels:
-            if _str[_pointer:i + 1] in jk.rr_to_jp:
-                _ret_str += jk.rr_to_jp[_str[_pointer:i + 1]]
+        if _str[i] in b.VOWELS:
+            if _str[_pointer:i + 1] in b.RR_TO_JP:
+                _ret_str += b.RR_TO_JP[_str[_pointer:i + 1]]
                 _pointer = i + 1
             else:  # 未登録の対応があったら
                 if _str[_pointer:i + 1][0] in ["l", "p", "k"]:  # 未登録はl,p,k始まりらしい
                     _ret_str += _str[_pointer:i + 1][0]
                     _pointer += 1
-                if _str[_pointer:i + 1] in jk.rr_to_jp:
-                    _ret_str += jk.rr_to_jp[_str[_pointer:i + 1]]
+                if _str[_pointer:i + 1] in b.RR_TO_JP:
+                    _ret_str += b.RR_TO_JP[_str[_pointer:i + 1]]
                     _pointer = i + 1
                 else:  # lpkのつぎにも変なのがきてたら警告
                     print("!!!", _str[_pointer:i + 1], _str)
@@ -40,14 +39,14 @@ def convert_romaji_jp_type(_str):
                 _ret_str += "ん"
 
     if _pointer != len(_str):
-        if _str[_pointer:len(_str)] in jk.rr_to_jp:
-            _ret_str += jk.rr_to_jp[_str[_pointer:len(_str)]]
+        if _str[_pointer:len(_str)] in b.RR_TO_JP:
+            _ret_str += b.RR_TO_JP[_str[_pointer:len(_str)]]
         else:  # 未登録の対応があったら
             if _str[_pointer:i + 1][0] in ["l", "p", "k"]:
                 _ret_str += _str[_pointer:i + 1][0]
                 _pointer += 1
-                if _str[_pointer:i + 1] in jk.rr_to_jp:
-                    _ret_str += jk.rr_to_jp[_str[_pointer:i + 1]]
+                if _str[_pointer:i + 1] in b.RR_TO_JP:
+                    _ret_str += b.RR_TO_JP[_str[_pointer:i + 1]]
                     _pointer = len(_str)
                 else:  # lpkのつぎにも変なのがきてたら警告
                     print("!!!", _str[_pointer:i + 1], _str)
