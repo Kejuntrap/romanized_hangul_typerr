@@ -1,4 +1,3 @@
-
 rr_to_jp = {
     "a": "あ", "eo": "えお", "o": "お", "u": "う", "eu": "えう", "i": "い", "ae": "あえ", "e": "え",
     "oe": "おえ", "wi": "うぃ", "ya": "や", "yeo": "いぇお", "yo": "よ", "yu": "ゆ", "yae": "やえ",
@@ -78,8 +77,14 @@ rr_to_jp = {
 
 vowels = ["a", "i", "u", "e", "o"]
 
+vowel_volume = [
+    ["yae", "yeo", "wae"],
+    ["ae", "ya", "eo", "ye", "wa", "oe", "yo", "wo", "we", "wi", "yu", "eu", "ui"],
+    ["a", "e", "o", "u", "i"]
+]
 
-def romaji_to_jp_input(_str):
+
+def romaji_to_jp_input(_str):  # パッチム付きのハングルをパッチムの領域とそうでない領域に分ける
     split = 0
     ret = ""
     d = False
@@ -94,3 +99,37 @@ def romaji_to_jp_input(_str):
     if split < len(_str):
         ret += rr_to_jp[_str[split:len(_str)]]
     return ret
+
+
+def rji_debug(_str):
+    split = 0
+    ret = ""
+    d = False
+    for i in range(0, len(_str)):
+        for j in range(0, len(vowels)):
+            if _str[-i - 1] == vowels[j] and not d:
+                split = len(_str) - i
+                d = True
+                break
+    print(0, split, split, len(_str))
+
+
+def extract_vowel(_str):  # パッチムの無い領域において後ろから最長の母音列を取り出す
+    split = 0
+    d = False
+    if len(_str) >= 3:
+        for vl in range(0, 3):
+            for i in range(0, len(vowel_volume[vl])):
+                if _str[-3 + vl:] == vowel_volume[vl][i] and not d:  # マッチするものが見つかったら
+                    split = len(_str) - 3 + vl
+                    d = True
+                    break
+    else:
+        for vl in range(3-len(_str),3):
+            for i in range(0,len(vowel_volume[vl])):
+                if _str[-len(_str) + vl:] == vowel_volume[vl][i] and not d:  # マッチするものが見つかったら
+                    split = len(_str) - len(_str)  + vl
+                    d = True
+                    break
+    print(0,split,split,len(_str))
+
