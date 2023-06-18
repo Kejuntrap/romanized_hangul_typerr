@@ -125,11 +125,10 @@ def extract_vowel(_str):  # パッチムの無い領域において後ろから�
                     d = True
                     break
     else:
-        for vl in range(3-len(_str),3):
-            for i in range(0,len(vowel_volume[vl])):
+        for vl in range(3 - len(_str), 3):
+            for i in range(0, len(vowel_volume[vl])):
                 if _str[-len(_str) + vl:] == vowel_volume[vl][i] and not d:  # マッチするものが見つかったら
-                    split = len(_str) - len(_str)  + vl
+                    split = len(_str) - len(_str) + vl
                     d = True
                     break
-    print(0,split,split,len(_str))
-
+    print(0, split, split, len(_str))
