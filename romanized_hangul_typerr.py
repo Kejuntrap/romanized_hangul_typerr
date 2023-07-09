@@ -15,22 +15,7 @@ def main():
     # print(len(duplication_memorize))
 
 
-def hangul_unicode(_c, _v, _b):
-    return 0xAC00 + _c * 0x24C + _v * 0x1C + _b
-
-
-def hangul_pronounce(code, _next_vowel):
-    code -= 0xAC00
-    _c = code // 0x24C
-    _v = (code - _c * 0x24C) // 0x1C
-    _b = code % 0x1C
-    if _next_vowel:
-        return b.CONSONANT_RR[_c] + b.VOWEL_RR[_v] + b.BATCHIM_WV_RR[_b]
-    else:
-        return b.CONSONANT_RR[_c] + b.VOWEL_RR[_v] + b.BATCHIM_WOV_RR[_b]
-
-
-def get_key(_pronounce, _chr):
+def get_key(_pronounce, _chr):  # ダブりを確認するための辞書配列のキーを作る関数
     if type(_chr) == int:
         return _pronounce + jk.romaji_to_jp_input(_pronounce) + str(chr(_chr))
     if type(_chr) == str:
@@ -38,66 +23,60 @@ def get_key(_pronounce, _chr):
 
 
 def output_tsv():  # １文字のハングルや子音，母音，パッチムの予測変換を作る
-    f = open("romanized_hangul_typerr.txt", "w", encoding="utf-16le")
-    f.write('\ufeff')
+    f: b.DictionaryWriter = b.DictionaryWriter()
+    f.init("romanized_hangul_typerr.txt", b.FILE_ENCODING)
     for vi in range(0, len(b.VOWEL_RR)):
         for ci in range(0, len(b.CONSONANT_RR)):
             for bi in range(0, len(b.BATCHIM_WV_RR)):
-                h_uni = hangul_unicode(ci, vi, bi)
-                hp1 = hangul_pronounce(h_uni, False)
-                hp2 = hangul_pronounce(h_uni, True)
+                h_uni = b.hangul_unicode(ci, vi, bi)
+                hp1 = b.hangul_pronounce(h_uni, False)
+                hp2 = b.hangul_pronounce(h_uni, True)
 
                 if get_key(hp1, h_uni) not in duplication_memorize:
-                    _str = jk.romaji_to_jp_input(hp1) + b.DELIM + str(chr(h_uni)) + b.DELIM + b.W_TYPE + b.NL
+                    f.wl([jk.romaji_to_jp_input(hp1), str(chr(h_uni)), b.W_TYPE], b.DELIM)
                     duplication_memorize[get_key(hp1, h_uni)] = 1
 
-                if jk.romaji_to_jp_input(hp1)[-1] == "ｎ" and hp1 + jk.romaji_to_jp_input(hp1).replace("ｎ", "ん") + str(
-                        chr(h_uni)) not in duplication_memorize:
-                    _str += jk.romaji_to_jp_input(hp1).replace("ｎ", "ん") + b.DELIM + str(
-                        chr(h_uni)) + b.DELIM + b.W_TYPE + b.NL  # ぱｎ(판)のように最後がｎで終わるやつがんに変換されても出るようにする
+                if jk.romaji_to_jp_input(hp1)[-1] == "ｎ" and hp1 + jk.romaji_to_jp_input(hp1).replace("ｎ", "ん") + str(chr(h_uni)) not in duplication_memorize:
+                    f.wl([jk.romaji_to_jp_input(hp1).replace("ｎ", "ん"), str(chr(h_uni)), b.W_TYPE], b.DELIM)  # ぱｎ(판)のように最後がｎで終わるやつがんに変換されても出るようにする
                     duplication_memorize[hp1 + jk.romaji_to_jp_input(hp1).replace("ｎ", "ん") + str(chr(h_uni))] = 1
 
                 if hp1 != hp2 and get_key(hp2, h_uni) not in duplication_memorize:  # 後にくるハングルで読みが変わるやつはそれも登録する
-                    _str += jk.romaji_to_jp_input(hp2) + b.DELIM + str(chr(h_uni)) + b.DELIM + b.W_TYPE + b.NL
+                    f.wl([jk.romaji_to_jp_input(hp2), str(chr(h_uni)), b.W_TYPE], b.DELIM)
                     duplication_memorize[get_key(hp2, h_uni)] = 1
                     if jk.romaji_to_jp_input(hp2)[-1] == "ｎ" and hp2 + jk.romaji_to_jp_input(hp2).replace("ｎ", "ん") + str(
                             chr(h_uni)) not in duplication_memorize:
-                        _str += jk.romaji_to_jp_input(hp2).replace("ｎ", "ん") + b.DELIM + str(
-                            chr(h_uni)) + b.DELIM + b.W_TYPE + b.NL  # ぱｎ(판)のように最後がｎで終わるやつがんに変換されても出るようにする
+                        f.wl([jk.romaji_to_jp_input(hp2).replace("ｎ", "ん"), str(chr(h_uni)), b.W_TYPE], b.DELIM)  # ぱｎ(판)のように最後がｎで終わるやつがんに変換されても出るようにする
                         duplication_memorize[hp2 + jk.romaji_to_jp_input(hp2).replace("ｎ", "ん") + str(chr(h_uni))] = 1
-
-                if len(_str) > 0:
-                    f.write(_str)
 
     # 母音ㅏやㅗなど ㅇをngと母音で出せるようにする ㅇㅈをいｊで出せるようにする
     for i in range(0, len(b.HANGEUL_VOWEL)):
         if get_key(b.VOWEL_RR[i], b.HANGEUL_VOWEL[i]) not in duplication_memorize:
-            f.write(jk.romaji_to_jp_input(b.VOWEL_RR[i]) + b.DELIM + b.HANGEUL_VOWEL[i] + b.DELIM + b.W_TYPE + b.NL)
+            f.wl([jk.romaji_to_jp_input(b.VOWEL_RR[i]), b.HANGEUL_VOWEL[i], b.W_TYPE], b.DELIM)
             duplication_memorize[get_key(b.VOWEL_RR[i], b.HANGEUL_VOWEL[i])] = 1
 
         if get_key(b.VOWEL_RR[i], "ㅇ") not in duplication_memorize:
-            f.write(jk.romaji_to_jp_input(b.VOWEL_RR[i]) + b.DELIM + "ㅇ" + b.DELIM + b.W_TYPE + b.NL)
+            f.wl([jk.romaji_to_jp_input(b.VOWEL_RR[i]), "ㅇ", b.W_TYPE], b.DELIM)
             duplication_memorize[get_key(b.VOWEL_RR[i], "ㅇ")] = 1
 
-        f.write("んｇ" + b.DELIM + "ㅇ" + b.DELIM + b.W_TYPE + b.NL)  # ㅇㅈ インジョンを いｊで出せるようにする
+        f.wl(["んｇ", "ㅇ", b.W_TYPE], b.DELIM)
         duplication_memorize["ngんｇㅇ"] = 1
 
     # 子音
     for i in range(0, len(b.HANGEUL_CONSONANT)):
         if len(jk.romaji_to_jp_input(b.CONSONANT_RR[i])) > 0 and get_key(b.CONSONANT_RR[i],
                                                                          b.HANGEUL_CONSONANT[i]) not in duplication_memorize:  # 無音のㅇを登録するのはあまりよろしくない
-            f.write(jk.romaji_to_jp_input(b.CONSONANT_RR[i]) + b.DELIM + b.HANGEUL_CONSONANT[i] + b.DELIM + b.W_TYPE + b.NL)
+            f.wl([jk.romaji_to_jp_input(b.CONSONANT_RR[i]), b.HANGEUL_CONSONANT[i], b.W_TYPE], b.DELIM)
             duplication_memorize[get_key(b.CONSONANT_RR[i], b.HANGEUL_CONSONANT[i])] = 1
 
     # パッチム
     for i in range(1, len(b.HANGEUL_BATCHIM)):  # 0はパッチムがつかないハングル用なので
         for j in range(0, len(b.HANGEUL_BATCHIM[i])):
             if get_key(b.BATCHIM_WOV_RR[i], b.HANGEUL_BATCHIM[i][j]) not in duplication_memorize:
-                f.write(jk.romaji_to_jp_input(b.BATCHIM_WOV_RR[i]) + b.DELIM + b.HANGEUL_BATCHIM[i][j] + b.DELIM + b.W_TYPE + b.NL)
+                f.wl([jk.romaji_to_jp_input(b.BATCHIM_WOV_RR[i]), b.HANGEUL_BATCHIM[i][j], b.W_TYPE], b.DELIM)
                 duplication_memorize[get_key(b.BATCHIM_WOV_RR[i], b.HANGEUL_BATCHIM[i][j])] = 1
 
             if get_key(b.BATCHIM_WV_RR[i], b.HANGEUL_BATCHIM[i][j]) not in duplication_memorize:
-                f.write(jk.romaji_to_jp_input(b.BATCHIM_WV_RR[i]) + b.DELIM + b.HANGEUL_BATCHIM[i][j] + b.DELIM + b.W_TYPE + b.NL)
+                f.wl([jk.romaji_to_jp_input(b.BATCHIM_WV_RR[i]), b.HANGEUL_BATCHIM[i][j], b.W_TYPE], b.DELIM)
                 duplication_memorize[get_key(b.BATCHIM_WV_RR[i], b.HANGEUL_BATCHIM[i][j])] = 1
 
     f.close()

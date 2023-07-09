@@ -1,6 +1,11 @@
+import os
+from typing import TextIO
+
 NL = "\n"
 W_TYPE = "固有名詞"
 DELIM = "\t"
+FILE_ENCODING = "utf-16le"
+COMMENT = '#'
 
 HANGEUL_VOWEL = [
     "ㅏ", "ㅐ", "ㅑ", "ㅒ", "ㅓ", "ㅔ", "ㅕ", "ㅖ", "ㅗ", "ㅘ", "ㅙ", "ㅚ", "ㅛ", "ㅜ", "ㅝ", "ㅞ", "ㅟ", "ㅠ", "ㅡ", "ㅢ", "ㅣ"
@@ -110,3 +115,141 @@ VOWEL_VOLUME = [
     ["ae", "ya", "eo", "ye", "wa", "oe", "yo", "wo", "we", "wi", "yu", "eu", "ui"],
     ["a", "e", "o", "u", "i"]
 ]
+
+IRREGULAR_VOWELS = ["l", "p", "k", "m", "j", "t", "r", "s", "h", "g", "b", "d", "c"]
+
+HAN_ZEN_VOWELS = {"l": "ｌ", "p": "ｐ", "k": "ｋ", "m": "ｍ", "j": "ｊ", "t": "ｔ", "r": "ｒ", "s": "ｓ", "h": "ｈ", "g": "ｇ", "b": "ｂ", "d": "ｄ", "c": "ｃ"}
+
+
+def convert_romaji_jp_type(_str):  # ローマ字表記を日本語入力に変換
+    _ret_str = ""
+    _pointer = 0
+    n_flag = False
+    for i in range(0, len(_str)):
+        if _str[i] in VOWELS:
+            n_flag = False
+            if _str[_pointer:i + 1] in RR_TO_JP:
+                _ret_str += RR_TO_JP[_str[_pointer:i + 1]]
+                _pointer = i + 1
+            else:  # 未登録の対応があったら
+                if _str[_pointer:i + 1][0] in IRREGULAR_VOWELS:  # 未登録はl,p,k,m始まりらしい
+                    _ret_str += HAN_ZEN_VOWELS[_str[_pointer:i + 1][0]]
+                    _pointer += 1
+                else:
+                    print("!!", _str)
+                    break
+                if _str[_pointer:i + 1] in RR_TO_JP:
+                    _ret_str += RR_TO_JP[_str[_pointer:i + 1]]
+                    _pointer = i + 1
+        elif _str[i] == 'n':
+            if n_flag:  # nn
+                _ret_str += "ん"
+                n_flag = False
+                _pointer = i + 1
+            else:  # hajimete n flag
+                n_flag = True
+                if _str[_pointer:i + 1] in RR_TO_JP:
+                    _ret_str += RR_TO_JP[_str[_pointer:i]]
+                else:
+                    if _pointer + 1 == i:
+                        _ret_str += HAN_ZEN_VOWELS[_str[_pointer:i]]
+                    else:
+                        _ret_str += convert_romaji_jp_type(_str[_pointer:i])
+                _pointer = i
+        elif _str[i] != 'n':
+            if n_flag:
+                _ret_str += "ん"
+                n_flag = False
+                _pointer = i
+
+    if _pointer < len(_str):
+        t_pointer = _pointer
+        for i in range(t_pointer, len(_str)):
+            if _str[i:len(_str)] in RR_TO_JP:
+                _ret_str += RR_TO_JP[_str[i:len(_str)]]
+                break
+            else:  # 未登録の対応があったら
+                if _str[i:len(_str)] in IRREGULAR_VOWELS:
+                    _ret_str += HAN_ZEN_VOWELS[_str[_pointer]]
+    return _ret_str
+
+
+def hangul_unicode(_c, _v, _b):
+    return 0xAC00 + _c * 0x24C + _v * 0x1C + _b
+
+
+def hangul_pronounce(code, _next_vowel):
+    code -= 0xAC00
+    _c = code // 0x24C
+    _v = (code - _c * 0x24C) // 0x1C
+    _b = code % 0x1C
+    if _next_vowel:
+        return CONSONANT_RR[_c] + VOWEL_RR[_v] + BATCHIM_WV_RR[_b]
+    else:
+        return CONSONANT_RR[_c] + VOWEL_RR[_v] + BATCHIM_WOV_RR[_b]
+
+
+def rr2k(_str):
+    _ret = ""
+    for i in range(0, len(_str)):
+        if i < len(_str) - 1:
+            if 0xAC00 + 0x24C * 11 <= ord(_str[i + 1]) < 0xAC00 + 0x24C * 12:
+                _ret += hangul_pronounce(ord(_str[i]), True)
+            else:
+                _ret += hangul_pronounce(ord(_str[i]), False)
+        else:
+            _ret += hangul_pronounce(ord(_str[i]), False)
+    return _ret
+
+
+def k_j(_str):  # ハングルから日本語の入力形式
+    return convert_romaji_jp_type(rr2k(_str))
+
+
+def file_check(x):
+    if not os.path.exists(x):
+        return None
+    else:
+        return open(x, 'r', encoding=FILE_ENCODING)  # return an open file handle
+
+
+def dictionary_word_maker(x):
+    result = ""
+    tmp = ""
+    last_index = 0
+    for i in range(0,len(x)):
+        if x[i] in HANGEUL_BATCHIM or x[i] in HANGEUL_VOWEL or x[i] in HANGEUL_CONSONANT or 0xAC00 <= ord(x[i]) <= 0xD7A3:
+            tmp += x[i]
+        else:
+            result += k_j(tmp)
+            tmp = ""
+            result += x[i]
+    if tmp != "":
+        result += k_j(tmp)
+    return result
+
+
+class DictionaryWriter:
+    output_filename: str
+    writer: TextIO
+    encoding: str
+
+    def init(self, _file_name, _enc):
+        self.output_filename = _file_name
+        self.encoding = _enc
+        self.writer = open(self.output_filename, 'w', encoding=self.encoding)
+        if self.encoding == FILE_ENCODING:
+            self.writer.write('\ufeff')  # magic number cf:bom
+
+    def w_str(self, _str):
+        self.writer.write(_str)
+
+    def wl(self, _ary, _delim):
+        _str = ""
+        for i in range(0, len(_ary) - 1):
+            _str += _ary[i] + _delim
+        _str += _ary[len(_ary) - 1] + NL
+        self.writer.write(_str)
+
+    def close(self):
+        self.writer.close()
